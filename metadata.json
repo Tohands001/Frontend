@@ -1,0 +1,8 @@
+
+{
+  "name": "TMLWM - Traceable Manufacturing Lifecycle",
+  "description": "A comprehensive MES and workflow management system for end-to-end serial number traceability, process routing, and auditability in manufacturing environments.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
