@@ -269,7 +269,7 @@ const UserControl: React.FC<{ store: any }> = ({ store }) => {
                         { id: 'planning', label: 'Building (Planning)' },
                         { id: 'execution', label: 'Execution' },
                         { id: 'mes', label: 'MES System' },
-                        { id: 'traceability', label: 'Traceability' },
+                        { id: 'info-centre', label: 'Info Centre' },
                         { id: 'users', label: 'User Control' }
                       ].map(section => (
                         <label key={section.id} className="flex items-center space-x-3 cursor-pointer group">
@@ -466,7 +466,7 @@ const UserControl: React.FC<{ store: any }> = ({ store }) => {
                         { id: 'planning', label: 'Building (Planning)' },
                         { id: 'execution', label: 'Execution' },
                         { id: 'mes', label: 'MES System' },
-                        { id: 'traceability', label: 'Traceability' },
+                        { id: 'info-centre', label: 'Info Centre' },
                         { id: 'users', label: 'User Control' }
                       ].map(section => (
                         <label key={section.id} className="flex items-center space-x-3 cursor-pointer group">

@@ -19,7 +19,12 @@ export enum FieldType {
   CAMERA = 'CAMERA',
   CHECKBOX_INSPECTION = 'CHECKBOX_INSPECTION',
   DATE = 'DATE',
-  TEXT_INPUT = 'TEXT_INPUT'
+  TEXT_INPUT = 'TEXT_INPUT',
+  NUMERIC_TOLERANCE = 'NUMERIC_TOLERANCE',
+  PART_SYNC = 'PART_SYNC',
+  DEVICE_ID_ENTRY = 'DEVICE_ID_ENTRY',
+  MASTER_CARTON_SYNC = 'MASTER_CARTON_SYNC',
+  DOCUMENT_AUDIT = 'DOCUMENT_AUDIT'
 }
 
 export enum SerialType {
@@ -33,7 +38,32 @@ export enum SerialStatus {
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
   IN_REWORK = 'IN_REWORK',
-  SCRAPPED = 'SCRAPPED'
+  SCRAPPED = 'SCRAPPED',
+  ON_HOLD = 'ON_HOLD',
+  MRB_HOLD = 'MRB-HOLD',
+  REWORK_PENDING = 'REWORK-PENDING'
+}
+
+export enum ResultAction {
+  NEXT_STATION = 'NEXT_STATION',
+  REWORK = 'REWORK',
+  HOLD = 'HOLD',
+  COMPLETE = 'COMPLETE'
+}
+
+export interface ToleranceSpec {
+  parameter: string;
+  min: number;
+  max: number;
+  unit: string;
+}
+
+export interface PartSyncRule {
+  label: string;
+  snFormatRegex: string;
+  requireFresh: boolean;
+  mustPassStation?: string; // Station ID the part must have passed
+  linkToParent: boolean;
 }
 
 export interface Checkpoint {
@@ -48,10 +78,14 @@ export interface StageField {
   type: FieldType;
   label: string;
   required: boolean;
-  options?: string[]; // For option select
+  options?: string[];
   checkpoints?: Checkpoint[];
   snFormatRegex?: string;
-  subType?: string; // For SUB type serials (A/B/C)
+  subType?: string;
+  toleranceSpecs?: ToleranceSpec[];
+  partSyncRules?: PartSyncRule[];
+  deviceIdFormat?: string;
+  masterCartonSize?: number; // e.g. 20
 }
 
 export interface Stage {
@@ -61,10 +95,14 @@ export interface Stage {
   fields: StageField[];
   nextStageId?: string;
   failRouteStageId?: string;
-  assignedUserIds: string[]; // List of user IDs allowed to execute this stage
+  assignedUserIds: string[];
   requiresLogin?: boolean;
-  isMergeStation?: boolean; // Module 4
-  isReworkStation?: boolean; // Module 5
+  isMergeStation?: boolean;
+  isReworkStation?: boolean;
+  failAction?: ResultAction; // What happens on FAIL (default REWORK)
+  holdOnFail?: boolean; // ST-9 to ST-12
+  isSemiDependent?: boolean; // ST-13, ST-14
+  feedsIntoStageId?: string; // Which main-line station this sub-assembly feeds into
 }
 
 export interface Project {
@@ -74,7 +112,7 @@ export interface Project {
   status: ProjectStatus;
   version: number;
   stages: Stage[];
-  snFormats: Record<string, string>; // Mapping of fieldLabel to Regex string
+  snFormats: Record<string, string>;
   modelName?: string;
 }
 
@@ -82,14 +120,21 @@ export interface SerialNumberRecord {
   sn: string;
   projectId: string;
   type: SerialType;
-  subType?: string; // A/B/C
+  subType?: string;
   currentStageId: string;
   status: SerialStatus;
-  parentSerialId?: string | null; // Module 4
-  scrapFlag: boolean; // Module 7
-  reworkCount: number; // Module 5
+  parentSerialId?: string | null;
+  scrapFlag: boolean;
+  reworkCount: number;
   createdTimestamp: number;
   updatedTimestamp: number;
+  linkedParts: Record<string, string>; // partLabel → partSN (1:1 mapping)
+  deviceId?: string; // Linked at ST-7
+  masterCartonId?: string; // Linked at ST-11
+  holdFlag: boolean;
+  nextPossibleStationId?: string; // For rework re-entry
+  mrbTicketId?: string; // Linked MRB Ticket
+  mrbRepeatCount: number; // For repeat failure tracking
   history: Array<{
     stageId: string;
     timestamp: number;
@@ -97,14 +142,30 @@ export interface SerialNumberRecord {
     status: 'PASSED' | 'FAILED';
     data: any;
     remark?: string;
-    defectCode?: string; // Module 5
-    rootCause?: string; // Module 5
-    correctiveAction?: string; // Module 5
+    defectCode?: string;
+    rootCause?: string;
+    correctiveAction?: string;
     isOverride?: boolean;
     overrideReason?: string;
-    isReplacementEvent?: boolean; // Module 6
-    unlinkedSerialId?: string; // Module 6
+    unlinkedSerialId?: string;
   }>;
+  draftReworkData?: {
+    defectiveQueue: any[];
+    mainPcbAction: string;
+    mainPcbRemarks: string;
+    reworkAction: string;
+    finalRemarks: string;
+  };
+}
+
+export interface ReworkEntry {
+  id: string;
+  defectivePartLabel: string;
+  oldPartSn: string;
+  newPartSn: string;
+  remarks: string;
+  replacedBy: string;
+  timestamp: number;
 }
 
 export enum UserStatus {
@@ -121,9 +182,39 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   password: string;
-  sectionsAccess: string[]; // IDs of nav items
-  projectsAccess: string[]; // IDs of projects
+  sectionsAccess: string[];
+  projectsAccess: string[];
   createdBy?: string;
+}
+
+export enum MrbStatus {
+  OPEN = 'OPEN',
+  PARTIALLY_CLOSED = 'PARTIALLY_CLOSED',
+  CLOSED = 'CLOSED'
+}
+
+export interface MrbDisposition {
+  serialNumbers: string[];
+  action: 'SCRAP' | 'REWORK';
+  remarks: string;
+  disposedBy: string;
+  timestamp: number;
+}
+
+export interface MrbTicket {
+  id: string; // MRB-YYYYMMDD-XXXX
+  projectId: string;
+  partName: string;
+  defectCategory: string;
+  description: string;
+  lineName: string;
+  shift: string;
+  createdBy: string;
+  source?: string; // e.g. "Manual" or "Rework Scrap"
+  timestamp: number;
+  serialNumbers: string[]; // Set of serials in this ticket
+  dispositions: MrbDisposition[];
+  status: MrbStatus;
 }
 
 export interface AuditLog {

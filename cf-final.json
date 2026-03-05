@@ -1,0 +1,73 @@
+{
+    "CallerReference": "terraform-20260226174353488300000001",
+    "Aliases": {
+        "Quantity": 1,
+        "Items": ["vault.unloq.co"]
+    },
+    "DefaultRootObject": "index.html",
+    "Origins": {
+        "Quantity": 1,
+        "Items": [{
+            "Id": "S3-frontend",
+            "DomainName": "dibs-vault-dev-frontend.s3.eu-west-2.amazonaws.com",
+            "OriginPath": "",
+            "CustomHeaders": {"Quantity": 0},
+            "S3OriginConfig": {"OriginAccessIdentity": ""},
+            "ConnectionAttempts": 3,
+            "ConnectionTimeout": 10,
+            "OriginShield": {"Enabled": false},
+            "OriginAccessControlId": "EDG8B69LLCLCR"
+        }]
+    },
+    "OriginGroups": {"Quantity": 0},
+    "DefaultCacheBehavior": {
+        "TargetOriginId": "S3-frontend",
+        "TrustedSigners": {"Enabled": false, "Quantity": 0},
+        "TrustedKeyGroups": {"Enabled": false, "Quantity": 0},
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["HEAD","GET"],
+            "CachedMethods": {"Quantity": 2, "Items": ["HEAD","GET"]}
+        },
+        "SmoothStreaming": false,
+        "Compress": true,
+        "LambdaFunctionAssociations": {"Quantity": 0},
+        "FunctionAssociations": {"Quantity": 0},
+        "FieldLevelEncryptionId": "",
+        "GrpcConfig": {"Enabled": false},
+        "ForwardedValues": {
+            "QueryString": false,
+            "Cookies": {"Forward": "none"},
+            "Headers": {"Quantity": 0},
+            "QueryStringCacheKeys": {"Quantity": 0}
+        },
+        "MinTTL": 0,
+        "DefaultTTL": 3600,
+        "MaxTTL": 86400
+    },
+    "CacheBehaviors": {"Quantity": 0},
+    "CustomErrorResponses": {
+        "Quantity": 2,
+        "Items": [
+            {"ErrorCode": 403, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 0},
+            {"ErrorCode": 404, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 0}
+        ]
+    },
+    "Comment": "",
+    "Logging": {"Enabled": false, "IncludeCookies": false, "Bucket": "", "Prefix": ""},
+    "PriceClass": "PriceClass_100",
+    "Enabled": true,
+    "ViewerCertificate": {
+        "ACMCertificateArn": "arn:aws:acm:us-east-1:563118428497:certificate/28d05356-e5bb-4e83-b7d9-d6d282303f70",
+        "SSLSupportMethod": "sni-only",
+        "MinimumProtocolVersion": "TLSv1.2_2021",
+        "CertificateSource": "acm"
+    },
+    "Restrictions": {"GeoRestriction": {"RestrictionType": "none", "Quantity": 0}},
+    "WebACLId": "",
+    "HttpVersion": "http2",
+    "IsIPV6Enabled": false,
+    "ContinuousDeploymentPolicyId": "",
+    "Staging": false
+}
