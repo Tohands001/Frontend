@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Project, ProjectStatus, SerialStatus, SerialNumberRecord, Stage } from '../types';
 import { Icons } from '../constants';
 
@@ -102,10 +102,21 @@ const Dashboard: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
   const [endDate, setEndDate] = useState('');
 
   const productionProjects = projects.filter((p: Project) => p.status === ProjectStatus.PRODUCTION);
+  const activeProjectId = productionProjects[0]?.id || 'tohands-main';
+
+  // Handle clicking outside to close dropdowns
+  useEffect(() => {
+    const handleClick = () => {
+      setShowStations(false);
+      setShowExport(false);
+    };
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
 
   // Filtered records based on project + date
   const filteredRecords: SerialNumberRecord[] = useMemo(() => {
-    let units: SerialNumberRecord[] = records.filter((r: SerialNumberRecord) => r.projectId === 'tohands-main');
+    let units: SerialNumberRecord[] = records.filter((r: SerialNumberRecord) => r.projectId === activeProjectId);
 
     if (dateFilter === 'custom' && startDate && endDate) {
       const start = new Date(startDate); start.setHours(0, 0, 0, 0);
@@ -116,7 +127,7 @@ const Dashboard: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
       });
     }
     return units;
-  }, [records, dateFilter, startDate, endDate]);
+  }, [records, dateFilter, startDate, endDate, activeProjectId]);
 
   // Metrics
   const metrics = useMemo(() => {
@@ -313,11 +324,13 @@ const Dashboard: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
       <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Production Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Real-time manufacturing intelligence for <strong>Tohands Smart Calculator V5</strong></p>
+          <p className="text-sm text-slate-500 mt-1">
+            Real-time manufacturing intelligence for <strong>{projects.find((p: any) => p.id === activeProjectId)?.modelName || 'Smart Calculator V5'}</strong>
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           {/* Stations */}
-          <div className="relative">
+          <div className="relative" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setShowStations(!showStations)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm"
@@ -329,10 +342,10 @@ const Dashboard: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
             {showStations && (
               <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 min-w-[240px] max-h-[400px] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
                 <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-1">Select Station</div>
-                {productionProjects.find(p => p.id === 'tohands-main')?.stages.map((stage: Stage) => (
+                {(productionProjects.find(p => p.id === activeProjectId) || projects.find((p: any) => p.id === activeProjectId))?.stages.map((stage: Stage) => (
                   <a
                     key={stage.id}
-                    href={`?view=station-view&projectId=tohands-main&stageId=${stage.id}`}
+                    href={`?view=station-view&projectId=${activeProjectId}&stageId=${stage.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setShowStations(false)}
@@ -350,19 +363,33 @@ const Dashboard: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
           </div>
 
           {/* Export */}
-          <div className="relative">
-            <button onClick={() => setShowExport(!showExport)} className="flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition">
+          <div className="relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowExport(!showExport)} className="flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-200 transition shadow-sm">
               <Icons.Execution className="w-4 h-4" /><span className="hidden sm:inline">Export</span>
             </button>
             {showExport && (
-              <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-xl shadow-lg border border-slate-200 p-1 min-w-[200px] animate-in fade-in">
-                <button onClick={handleExport} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
-                  <Icons.Traceability className="w-4 h-4" /> Serial Number Linking Data
+              <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-xl shadow-lg border border-slate-200 p-1 min-w-[240px] animate-in slide-in-from-top-2 duration-200">
+                <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-1">Export Data</div>
+                <button onClick={handleExport} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                    <Icons.Traceability className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold">CSV Export</div>
+                    <div className="text-[10px] text-slate-400 font-medium">Serial Linking History</div>
+                  </div>
                 </button>
               </div>
             )}
           </div>
-          <button onClick={() => window.location.reload()} title="Refresh" className="w-10 h-10 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition">
+          <button
+            onClick={() => { if (window.confirm('This will reset all production data to defaults. Continue?')) store.resetStore(); }}
+            title="System Reset"
+            className="w-10 h-10 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center text-amber-600 hover:bg-amber-100 transition shadow-sm"
+          >
+            <Icons.Settings className="w-5 h-5" />
+          </button>
+          <button onClick={() => window.location.reload()} title="Refresh" className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-50 transition shadow-sm">
             <Icons.Refresh className="w-4 h-4" />
           </button>
         </div>

@@ -545,6 +545,16 @@ export const useStore = () => {
     setCurrentUser(null);
   };
 
+  const resetStore = () => {
+    localStorage.clear();
+    setProjects(SEED_PROJECTS);
+    setRecords(SEED_RECORDS);
+    setUsers(DEMO_USERS);
+    setAuditLogs([]);
+    setMrbTickets([]);
+    window.location.reload();
+  };
+
   // ─── SERIAL CREATION ──────────────────────────────────────────────
   const createSerial = (sn: string, projectId: string, type: SerialType, subType?: string, initialStageId?: string): { success: boolean; message?: string; record?: SerialNumberRecord } => {
     const existing = records.find(r => r.sn === sn);
@@ -1384,6 +1394,7 @@ export const useStore = () => {
     auditLogs,
     login,
     logout,
+    resetStore,
     createProject,
     updateProject,
     deleteProject,
