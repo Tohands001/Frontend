@@ -3,7 +3,7 @@ import { UserRole } from '../types';
 import { Icons } from '../constants';
 
 interface LoginProps {
-  onLogin: (username: string, password?: string) => boolean;
+  onLogin: (username: string, password?: string) => { success: boolean; message?: string };
 }
 
 type LoginMode = 'SELECT_ROLE' | 'ENTER_CREDENTIALS';
@@ -67,7 +67,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const result = onLogin(username, password) as any;
+    const result = onLogin(username, password);
     if (!result.success) {
       setError(result.message || "Invalid credentials for the selected role.");
     }

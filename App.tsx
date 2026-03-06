@@ -50,7 +50,7 @@ const App: React.FC = () => {
     }
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, '', newUrl);
-  }, [activeView, selectedProjectId]);
+  }, [activeView, selectedProjectId, selectedStageId]);
 
   // Deep-link detection for Isolated Terminal Mode
   const urlParams = new URLSearchParams(window.location.search);

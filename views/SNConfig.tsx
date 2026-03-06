@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Project, ProjectStatus, FieldType } from '../types';
 import { Icons } from '../constants';
 
@@ -7,6 +7,22 @@ const SNConfig: React.FC<{ store: any; projectId: string; navigateTo: any }> = (
   const { projects, updateProject, addAuditLog } = store;
   const project = projects.find((p: any) => p.id === projectId);
   const [isSimulating, setIsSimulating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDownloadTemplate = () => {
+    const snFields = project.stages.flatMap((s: any) =>
+      s.fields.filter((f: any) => f.type === FieldType.SERIAL_NUMBER || f.type === FieldType.SUB_SERIAL_NUMBER)
+    );
+    const headers = snFields.length > 0 ? snFields.map((f: any) => f.label) : ['Main Serial Number'];
+    const csv = headers.join(',') + '\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.name}_sn_template.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (!project) return <div>Project not found</div>;
 
@@ -51,7 +67,7 @@ const SNConfig: React.FC<{ store: any; projectId: string; navigateTo: any }> = (
               Step 1: Download Template
             </h3>
             <p className="text-sm text-indigo-700 mt-2">The system will generate a CSV file with headers matching all SN and Sub-SN fields you defined in your stages.</p>
-            <button className="mt-4 bg-white text-indigo-600 px-5 py-2 rounded-xl font-bold border border-indigo-200 hover:bg-indigo-100 transition shadow-sm">
+            <button onClick={handleDownloadTemplate} className="mt-4 bg-white text-indigo-600 px-5 py-2 rounded-xl font-bold border border-indigo-200 hover:bg-indigo-100 transition shadow-sm">
               Download Template (.csv)
             </button>
           </div>
@@ -63,10 +79,13 @@ const SNConfig: React.FC<{ store: any; projectId: string; navigateTo: any }> = (
             </h3>
             <p className="text-sm text-slate-600 mt-2">Populate the template with 10-20 examples of valid Serial Numbers. Our engine will learn the patterns automatically.</p>
 
-            <div className="mt-6 border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center justify-center bg-white">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-6 border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center justify-center bg-white cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition"
+            >
               <Icons.Plus className="w-10 h-10 text-slate-300 mb-2" />
               <p className="text-slate-400 font-medium">Click to upload completed template</p>
-              <input type="file" className="hidden" />
+              <input ref={fileInputRef} type="file" accept=".csv" className="hidden" />
             </div>
           </div>
         </div>

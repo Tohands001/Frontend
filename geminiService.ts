@@ -13,7 +13,7 @@ export const analyzeAuditLogs = async (logs: any[]) => {
   try {
     if (!ai) return "Analysis unavailable: API key not configured.";
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: `Analyze the following manufacturing audit logs for potential issues, bottlenecks, or security risks. Summarize key findings. Logs: ${JSON.stringify(logs.slice(0, 50))}`,
       config: {
         temperature: 0.2,
@@ -30,7 +30,7 @@ export const suggestWorkflow = async (productDesc: string) => {
   try {
     if (!ai) return null;
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: `Based on this product description, suggest a 5-stage manufacturing workflow. Description: ${productDesc}`,
       config: {
         responseMimeType: "application/json",

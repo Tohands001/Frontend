@@ -20,6 +20,14 @@ const Execution: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
     }
   };
 
+  const handleArchive = (projectId: string) => {
+    const project = projects.find((p: any) => p.id === projectId);
+    if (confirm(`Archive ${project.name}? This project will be moved to the archived state.`)) {
+      updateProject(projectId, { status: ProjectStatus.ARCHIVED });
+      addAuditLog('Project Archived', projectId);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <header>
@@ -114,6 +122,7 @@ const Execution: React.FC<{ store: any; navigateTo: any }> = ({ store, navigateT
                     View Station Load
                   </button>
                   <button
+                    onClick={() => handleArchive(project.id)}
                     className="px-4 border border-slate-200 text-slate-500 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition"
                   >
                     Archive
