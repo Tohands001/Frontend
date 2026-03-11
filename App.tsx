@@ -18,12 +18,18 @@ import Rework from './views/Rework';
 import MRBDashboard from './views/MRBDashboard';
 import StationView from './views/StationView';
 
+import ComingSoon from './views/ComingSoon';
+import MainDashboard from './views/MainDashboard';
+
+
+
 const App: React.FC = () => {
   const store = useStore();
   const [activeView, setActiveView] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('view') || 'dashboard';
+    return params.get('view') || 'main-dashboard';
   });
+
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('projectId');
@@ -33,6 +39,15 @@ const App: React.FC = () => {
     return params.get('stageId');
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const mesViews = ['dashboard', 'planning', 'execution', 'rework', 'mrb-board', 'info-centre', 'mes', 'stage-config', 'sn-config', 'station-view'];
+
+  const [currentSection, setCurrentSection] = useState<'main' | 'mes'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view') || 'dashboard';
+    return mesViews.includes(view) ? 'mes' : 'main';
+  });
+
 
   // Sync state to URL
   React.useEffect(() => {
@@ -50,7 +65,15 @@ const App: React.FC = () => {
     }
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, '', newUrl);
+
+    // Sync section with view
+    if (mesViews.includes(activeView)) {
+      setCurrentSection('mes');
+    } else {
+      setCurrentSection('main');
+    }
   }, [activeView, selectedProjectId, selectedStageId]);
+
 
   // Deep-link detection for Isolated Terminal Mode
   const urlParams = new URLSearchParams(window.location.search);
@@ -63,12 +86,10 @@ const App: React.FC = () => {
   const handleLogin = (username: string, password?: string) => {
     const result = store.login(username, password);
     if (result.success) {
-      if (store.currentUser?.role === UserRole.USER) {
-        setActiveView('mes');
-      } else {
-        setActiveView('planning');
-      }
+      setActiveView('main-dashboard');
+      setCurrentSection('main');
     }
+
     return result;
   };
 
@@ -94,24 +115,45 @@ const App: React.FC = () => {
   }
 
   const navigateTo = (view: string, projectId: string | null = null, stageId: string | null = null) => {
+    if (view === 'mes-section') {
+      setActiveView('dashboard');
+      setCurrentSection('mes');
+      setIsSidebarOpen(false);
+      return;
+    }
+    if (view === 'main-dashboard') {
+      setActiveView('main-dashboard');
+      setCurrentSection('main');
+      setIsSidebarOpen(false);
+      return;
+    }
     setActiveView(view);
+
     setSelectedProjectId(projectId);
     setSelectedStageId(stageId);
     setIsSidebarOpen(false); // Close sidebar on navigation (mobile)
   };
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Icons.Dashboard, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
-    { id: 'planning', label: 'Building (Planning)', icon: Icons.Planning, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
-    { id: 'execution', label: 'Execution', icon: Icons.Execution, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
-    { id: 'mes', label: 'MES System', icon: Icons.MES, roles: [UserRole.ADMIN, UserRole.MODERATOR, UserRole.USER] },
-    { id: 'rework', label: 'Rework Station', icon: Icons.Refresh, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
-    { id: 'mrb-board', label: 'MRB Board', icon: Icons.Lock, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
-    { id: 'info-centre', label: 'Info Centre', icon: Icons.Traceability, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+  const mainNavItems = [
+    { id: 'supply-demand', label: 'Supply & Demand', icon: Icons.Collection, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'communication', label: 'Communication', icon: Icons.Chat, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'planning-execution', label: 'Planning & Execution', icon: Icons.PresentationChart, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'mes-section', label: 'MES System', icon: Icons.MES, roles: [UserRole.ADMIN, UserRole.MODERATOR, UserRole.USER] },
+    { id: 'erp-system', label: 'ERP System', icon: Icons.OfficeBuilding, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
     { id: 'users', label: 'User Control', icon: Icons.UserControl, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
   ];
 
-  const filteredNavItems = navItems.filter(item => {
+  const mesNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Icons.Dashboard, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'planning', label: 'Building (Planning)', icon: Icons.Planning, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'execution', label: 'Execution', icon: Icons.Execution, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'rework', label: 'Rework Station', icon: Icons.Refresh, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'mrb-board', label: 'MRB Board', icon: Icons.Lock, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'info-centre', label: 'Info Centre', icon: Icons.Traceability, roles: [UserRole.ADMIN, UserRole.MODERATOR] },
+    { id: 'mes', label: 'Factory Terminal', icon: Icons.MES, roles: [UserRole.ADMIN, UserRole.MODERATOR, UserRole.USER] },
+  ];
+
+  const filteredNavItems = (currentSection === 'mes' ? mesNavItems : mainNavItems).filter(item => {
     const userRole = store.currentUser!.role;
     if (!item.roles.includes(userRole)) return false;
     if (userRole === UserRole.MODERATOR) {
@@ -120,9 +162,12 @@ const App: React.FC = () => {
     return true;
   });
 
+
   const renderView = () => {
     switch (activeView) {
+      case 'main-dashboard': return <MainDashboard store={store} navigateTo={navigateTo} />;
       case 'dashboard': return <Dashboard store={store} navigateTo={navigateTo} />;
+
       case 'planning': return <Planning store={store} navigateTo={navigateTo} />;
       case 'stage-config': return <StageConfig store={store} projectId={selectedProjectId!} navigateTo={navigateTo} />;
       case 'sn-config': return <SNConfig store={store} projectId={selectedProjectId!} navigateTo={navigateTo} />;
@@ -133,8 +178,14 @@ const App: React.FC = () => {
       case 'info-centre': return <InfoCentre store={store} />;
       case 'users': return <UserControl store={store} />;
       case 'station-view': return <StationView store={store} projectId={selectedProjectId!} stageId={selectedStageId!} />;
+      case 'supply-demand':
+      case 'communication':
+      case 'planning-execution':
+      case 'erp-system':
+        return <ComingSoon />;
       default: return <Dashboard store={store} navigateTo={navigateTo} />;
     }
+
   };
 
   return (
@@ -152,15 +203,16 @@ const App: React.FC = () => {
         }`}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <a
-            href="?view=dashboard"
+            href="?view=main-dashboard"
             onClick={(e) => {
               if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button !== 1) {
                 e.preventDefault();
-                navigateTo('dashboard');
+                navigateTo('main-dashboard');
               }
             }}
             className="block hover:opacity-80 transition-opacity"
           >
+
             <h1 className="text-xl font-bold tracking-tight text-indigo-400">TMLWM</h1>
             <p className="text-xs text-slate-400 mt-1 uppercase font-semibold">Manufacturing Platform</p>
           </a>
@@ -170,7 +222,24 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {currentSection === 'mes' && (
+            <button
+              onClick={() => setCurrentSection('main')}
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-indigo-400 hover:bg-slate-800 transition-all duration-200 mb-4 border border-indigo-500/20"
+            >
+              <Icons.ChevronLeft className="w-5 h-5" />
+              <span className="font-bold text-sm uppercase tracking-wider">Back to Main</span>
+            </button>
+          )}
+
+          <div className="mb-4 px-4">
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+              {currentSection === 'mes' ? 'MES Operations' : 'Primary Navigation'}
+            </h2>
+          </div>
+
           {filteredNavItems.map((item) => (
+
             <a
               key={item.id}
               href={`?view=${item.id}`}
@@ -224,8 +293,28 @@ const App: React.FC = () => {
         </div>
 
         <div className="max-w-7xl mx-auto p-4 md:p-8">
+          {activeView !== 'main-dashboard' && (
+            <div className="flex items-center space-x-4 mb-6 animate-in fade-in slide-in-from-left-4">
+              <button 
+                onClick={() => navigateTo('main-dashboard')}
+                className="flex items-center space-x-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm group"
+              >
+                <Icons.ChevronLeft className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Back</span>
+              </button>
+              
+              <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <button onClick={() => navigateTo('main-dashboard')} className="hover:text-indigo-600 transition-colors">Home</button>
+                <Icons.ChevronRight className="w-3 h-3 opacity-30" />
+                <span className="text-slate-900">{
+                  [...mainNavItems, ...mesNavItems].find(i => i.id === activeView)?.label || activeView.replace('-', ' ')
+                }</span>
+              </div>
+            </div>
+          )}
           {renderView()}
         </div>
+
       </main>
     </div>
   );
